@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='md5any',
-    version="0.1",
+    version="0.11",
     author="bing",
     packages=find_packages(),
     include_package_data=True,

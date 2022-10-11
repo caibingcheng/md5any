@@ -1,11 +1,11 @@
-import os
+from pathlib import Path
 
 from .error import MD5AnyErrorCode
 from .hash import hash
 
 class Hash:
     def __init__(self, path):
-        self._abs = self._hash_dir(path) if os.path.isdir(path) else self._hash_file(path)
+        self._abs = self._hash_dir(path) if Path(path).is_dir() else self._hash_file(path)
 
     @property
     def absrtact(self):
@@ -13,17 +13,17 @@ class Hash:
 
     @staticmethod
     def test(path):
-        if not os.path.exists(path):
+        if not Path(path).exists():
             errorMsg = "Invalid path {}".format(path)
             raise MD5AnyErrorCode(errorMsg)
         return path
 
     def _hash_file(self, filepath, dentry=None):
-        if os.path.isdir(filepath):
+        if Path(filepath).is_dir():
             raise MD5AnyErrorCode("Not a regular file")
 
         try:
-            with open(filepath, 'rb') as f:
+            with Path(filepath).open('rb') as f:
                 abs = hash(str(f.read()))
                 if dentry is not None:
                     abs = hash(str(dentry) + str(abs))
@@ -31,16 +31,17 @@ class Hash:
         except:
             raise MD5AnyErrorCode("Hash failed")
 
-    def _hash_dir(self, dirpath, dentry=None):
-        if not os.path.isdir(dirpath):
+    def _hash_dir(self, dirpath, dentry='.'):
+        if not Path(dirpath).is_dir():
             raise MD5AnyErrorCode("Not a regular directory")
 
         hashList = []
-        for root,dirs,files in os.walk(dirpath):
-            for file in files:
-                hashList.append(self._hash_file(os.path.join(root, file), dentry))
-            for dir in dirs:
-                hashList.append(self._hash_dir(os.path.join(root, dir), dir))
+        path = Path(dirpath)
+        for item in path.iterdir():
+            if item.is_dir():
+                hashList.append(self._hash_dir(str(item), str(item.name)))
+            if item.is_file():
+                hashList.append(self._hash_file(str(item), Path(dentry).joinpath(str(item.name))))
         hashList.sort()
         abs = hash(str(dentry) + ''.join(hashList))
         return abs
